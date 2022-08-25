@@ -63,7 +63,7 @@ class TypingVisitor(visitor.Visitor):
     def visit_Module(self, node):
         env = node.retic_type.getAllFieldType() # python字典{str:Ty} 初始环境是所有函数的类型
         for nd in node.body:
-            env = self.dispatch(nd, env=env) # 每个节点都初始化一个typing环境
+            env = self.visit(nd, env=env) # 每个节点都初始化一个typing环境
         return env # 返回整个模块所有接口的类型
 
     def visit_FunctionDef(self, node, env):
@@ -75,7 +75,7 @@ class TypingVisitor(visitor.Visitor):
         # 将参数加入env
         local_env.update({ nm : ty for nm, ty in zip(node.retic_type.getArgType().getArgNameList(), node.retic_type.getArgType().getArgTypeList())})
         for nd in node.body:
-            local_env = self.dispatch(nd, env=local_env) # 每次都会返回新的env
+            local_env = self.visit(nd, env=local_env) # 每次都会返回新的env
         return env # 函数定义不会创造新的环境（因为一开始就把所有函数类型加到环境中了）
 
 
@@ -87,7 +87,7 @@ class TypingVisitor(visitor.Visitor):
         # python的赋值操作允许多目标赋值，但我们这里先不管这个
 
         local_env = env.copy()
-        value_type = self.dispatch(node.value, env=env) # Ty
+        value_type = self.visit(node.value, env=env) # Ty
         # case 1: Multiple assignment 就是 x = y = 1 这种
         for t in node.targets:
             assert isinstance(t, ast.Name)
@@ -107,7 +107,7 @@ class TypingVisitor(visitor.Visitor):
         if node.value is None:
             return_type = tysys.TyDyn()
         else:
-            return_type = self.dispatch(node.value, env=env)
+            return_type = self.visit(node.value, env=env)
 
         # 向上查找FunctionDef节点，判断其标注类型是否和return_type一致
         fd = node
@@ -157,7 +157,7 @@ class TypingVisitor(visitor.Visitor):
         # 暂时只考虑value是Name，slice是Index的情况，即a[1]
         assert isinstance(node.value, ast.Name)
         assert isinstance(node.slice, ast.Index)
-        container_type = self.dispatch(node.value, env)
+        container_type = self.visit(node.value, env)
         if isinstance(container_type, tysys.TyContainer):
             if tysys.typeEq(container_type, tysys.TyDict()):
                 # 只可能是valType
@@ -181,8 +181,8 @@ class TypingVisitor(visitor.Visitor):
     def visit_BinOp(self, node, env):
         # BinOp(expr left, operator op, expr right)
         # python的二元操作其实允许"xyz"*3这样的操作，但我们这里先不管这个
-        left_type = self.dispatch(node.left, env=env) # Ty
-        right_type = self.dispatch(node.right, env=env) # Ty
+        left_type = self.visit(node.left, env=env) # Ty
+        right_type = self.visit(node.right, env=env) # Ty
         if tysys.typeConsistent(left_type, right_type):
             node.retic_type = left_type
         else:
@@ -192,7 +192,7 @@ class TypingVisitor(visitor.Visitor):
     def visit_BoolOp(self, node, env):
         # BoolOp(boolop op, expr* values)
         for val in node.values:
-            self.dispatch(val, env=env) # 为的是将所有expr都typing
+            self.visit(val, env=env) # 为的是将所有expr都typing
         node.retic_type = tysys.TyBool()
         return node.retic_type
 
@@ -202,9 +202,9 @@ class TypingVisitor(visitor.Visitor):
         assert isinstance(node.func, ast.Name)
 
         for arg in node.args:
-            self.dispatch(arg, env=env) # 为的是将所有expr都typing
+            self.visit(arg, env=env) # 为的是将所有expr都typing
         for kw in node.keywords:
-            self.dispatch(kw, env=env) # 为的是将所有expr都typing
+            self.visit(kw, env=env) # 为的是将所有expr都typing
 
         fun_type = env.get(node.func.id, None)
         # 这里需要检查调用时的参数类型是否匹配
@@ -220,7 +220,7 @@ class TypingVisitor(visitor.Visitor):
     def visit_keyword(self, node, env):
         # keyword = (identifier? arg, expr value)
         # 调用的时候，需要解析出arg对应的参数是哪个，但这里我们先简单地处理，只考虑value的类型
-        return self.dispatch(node.value, env=env)
+        return self.visit(node.value, env=env)
 
 
 
@@ -231,7 +231,7 @@ class TypingVisitor(visitor.Visitor):
 # 打印所有节点的retic_type信息
 class ShowTyping(visitor.Visitor):
 
-    def dispatch(self, node, indent):
+    def visit(self, node, indent):
         print('------' * indent, end='')
         print(re.findall('<_ast.* object', str(node))[0][6:-7], end='')
         if isinstance(node, ast.expr):
@@ -246,7 +246,7 @@ class ShowTyping(visitor.Visitor):
         else:
             print('')
         for nd in ast.iter_child_nodes(node):
-            self.dispatch(nd, indent+1)
+            self.visit(nd, indent + 1)
 
 
 # 使用方法：InferVisitor(st).visit()
@@ -257,7 +257,7 @@ class InferVisitor(visitor.Visitor):
     def visit_Module(self, node):
         env = {}
         for nd in node.body:
-            env = self.dispatch(nd, env=env)
+            env = self.visit(nd, env=env)
         return env  # 返回整个模块所有可以静态推导出的类型
 
     def visit_FunctionDef(self, node, env):

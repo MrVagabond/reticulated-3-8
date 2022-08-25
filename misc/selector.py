@@ -1,5 +1,6 @@
 import ast
-from retic import astim
+from misc import astim
+
 
 class Selector:
     def __init__(self, tree:ast.Module):

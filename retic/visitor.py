@@ -1,8 +1,9 @@
+
+
 import ast
 
-####
-#  定义所有需要实现的language feature对应的接口
-####
+
+
 class Visitor:
     def __init__(self, tree):
         assert tree.__class__ == ast.Module
@@ -11,7 +12,7 @@ class Visitor:
 
     # 所有调用都使用dispatch
     # 由于采用的是访问者模式，所以每个节点都必须手动进行dispatch
-    def dispatch(self, node, *args, **kwargs): # 中转层，也叫dispatch层，允许每个visit函数附带一个元组参数和一个字典参数
+    def visit(self, node, *args, **kwargs): # 中转层，也叫dispatch层，允许每个visit函数附带一个元组参数和一个字典参数
         clzName = node.__class__.__name__
         meth = getattr(self, 'visit_' + clzName, None)
         if meth is None:
@@ -20,9 +21,9 @@ class Visitor:
         self.currentNode = node
         return meth(node, *args, **kwargs)
 
-    # visit只在最上层调用
-    def visit(self, *args, **kwargs):
-        return self.dispatch(self.tree, *args, **kwargs)
+    # proceed只在最上层调用
+    def proceed(self, *args, **kwargs):
+        return self.visit(self.tree, *args, **kwargs)
 
 
     #---- 会产生新的scope的语句

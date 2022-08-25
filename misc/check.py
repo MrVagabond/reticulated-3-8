@@ -1,7 +1,7 @@
 
 import ast
-from . import tysys
-from . import visitor
+from retic import tysys
+from retic import visitor
 
 
 class Check(ast.expr):
@@ -21,7 +21,7 @@ class InsertCheck(visitor.Visitor):
     def visit_Module(self, node):
         # Module(stmt* body, type_ignore *type_ignores)
         for nd in node.body:
-            self.dispatch(nd)
+            self.visit(nd)
 
     def visit_FunctionDef(self, node):
         pass

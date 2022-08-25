@@ -16,7 +16,7 @@ class TypingVisitor(visitor.Visitor):
         else:
             env = TypingEnv(copyFrom=typing_env)
         for nd in node.body:
-            env = self.dispatch(nd, env)
+            env = self.visit(nd, env)
         node.retic_type = env
         return env
 
@@ -52,7 +52,7 @@ class TypingVisitor(visitor.Visitor):
             env.put(nm, ty)
         env.put(node.name, node.retic_type)
         for nd in node.body:
-            env = self.dispatch(nd, env)
+            env = self.visit(nd, env)
 
         # 最后只在传入env中新增该函数的类型
         ret_env = TypingEnv(copyFrom=typing_env)
@@ -93,7 +93,7 @@ class TypingVisitor(visitor.Visitor):
         # Assign(expr* targets, expr value, string? type_comment)
 
         env = TypingEnv(copyFrom=typing_env)
-        value_type = self.dispatch(node.value, env)  # Ty
+        value_type = self.visit(node.value, env)  # Ty
         # case 1: Multiple assignment 就是 x = y = 1 这种
         for t in node.targets:
             assert isinstance(t, ast.Name)
@@ -110,7 +110,7 @@ class TypingVisitor(visitor.Visitor):
         if node.value is None:
             pass
         else:
-            self.dispatch(node.value, typing_env)
+            self.visit(node.value, typing_env)
         return TypingEnv(copyFrom=typing_env)
 
 
@@ -143,7 +143,7 @@ class TypingVisitor(visitor.Visitor):
         # 暂时只考虑value是Name，slice是Index的情况，即a[1]
         assert isinstance(node.value, ast.Name)
         assert isinstance(node.slice, ast.Index)
-        container_type = self.dispatch(node.value, typing_env)
+        container_type = self.visit(node.value, typing_env)
         if isinstance(container_type, TyContainer):
             if typeEq(container_type, TyDict()):
                 # 只可能是valType
@@ -159,7 +159,7 @@ class TypingVisitor(visitor.Visitor):
         # 如果是内置类型，需要访问typing_builtin中的记录
         # 否则就是自定义类型，暂不支持
         assert isinstance(node.value, ast.Name)
-        instance_type = self.dispatch(node.value, typing_env)
+        instance_type = self.visit(node.value, typing_env)
         if isinstance(instance_type, TyInt):
             node.retic_type = typing_builtin.intfields[node.attr]
         elif isinstance(instance_type, TyBool):
@@ -203,8 +203,8 @@ class TypingVisitor(visitor.Visitor):
 
     def visit_BinOp(self, node, typing_env):
         # BinOp(expr left, operator op, expr right)
-        left_type = self.dispatch(node.left, typing_env)  # Ty
-        right_type = self.dispatch(node.right, typing_env)  # Ty
+        left_type = self.visit(node.left, typing_env)  # Ty
+        right_type = self.visit(node.right, typing_env)  # Ty
         if typeEq(left_type, right_type):
             node.retic_type = left_type
         else:
@@ -214,7 +214,7 @@ class TypingVisitor(visitor.Visitor):
 
     def visit_UnaryOp(self, node, typing_env):
         # UnaryOp(unaryop op, expr operand)
-        operand_type = self.dispatch(node.operand, typing_env)
+        operand_type = self.visit(node.operand, typing_env)
         if isinstance(node.op, ast.Not):
             node.retic_type = TyBool()
         else:
@@ -236,11 +236,11 @@ class TypingVisitor(visitor.Visitor):
 
     def visit_Call(self, node, typing_env):
         # Call(expr func, expr* args, keyword* keywords)
-        func_type = self.dispatch(node.func, typing_env)
+        func_type = self.visit(node.func, typing_env)
         for nd in node.args:
-            self.dispatch(nd, typing_env)
+            self.visit(nd, typing_env)
         for nd in node.keywords:
-            self.dispatch(nd, typing_env)
+            self.visit(nd, typing_env)
 
         # * |= *->*
         # A->B |= A->B
@@ -269,7 +269,7 @@ class TypingVisitor(visitor.Visitor):
 # 打印所有节点的retic_type信息
 class ShowTyping(visitor.Visitor):
 
-    def dispatch(self, node, indent):
+    def visit(self, node, indent):
         print('------' * indent, end='')
         print(re.findall('<_ast.* object', str(node))[0][6:-7], end='')
         if isinstance(node, ast.expr):
@@ -284,7 +284,7 @@ class ShowTyping(visitor.Visitor):
         else:
             print('')
         for nd in ast.iter_child_nodes(node):
-            self.dispatch(nd, indent+1)
+            self.visit(nd, indent + 1)
 
 
 class TypingErr(Exception):

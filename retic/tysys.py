@@ -1,6 +1,15 @@
 
-#### 完全独立的一个模块，用来定义类型系统的数据和接口
+# 定义retic使用的类型系统
+
 import sys
+
+# Ty = TyPrim | TyDyn | TyBot | TyNone | TyModule | TyArg | TyFun | TyContainer
+
+__all__ = ['TyInt', 'TyBool', 'TyStr', 'TyDyn', 'TyNone',
+           'TyModule', 'TyListArg', 'TyDynArg', 'TyFun',
+           'TyList', 'TyDict', 'TyTuple', 'TySet', 'TyContainer',
+           'typeEq', 'typeConsistent', 'typeJoin', 'typeMeet',
+           'TypingEnv']
 
 
 class Ty:

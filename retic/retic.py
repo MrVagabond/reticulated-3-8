@@ -1,9 +1,9 @@
+# main是入口函数
+
 import ast
 import sys
 import astpretty
 
-from . import typing
-from . import astim
 
 def main():
 
@@ -13,10 +13,10 @@ def main():
     st = ast.parse(file.read())
     file.close()
     astpretty.pprint(st, show_offsets=False)
-    astim.add_parent(st) # 为每个节点标记父节点retic_parent
-
-    typing.TypingVisitor(st).visit()
-    typing.ShowTyping(st).visit(indent=0)
+    # astim.add_parent(st) # 为每个节点标记父节点retic_parent
+    #
+    # typing.TypingVisitor(st).proceed()
+    # typing.ShowTyping(st).proceed(indent=0)
 
 
 

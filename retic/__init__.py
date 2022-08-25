@@ -1,7 +1,4 @@
 
+# pass 1: 处理类型标注，将所有类型标注转为tysys中的类型表示，存放在ast节点的retic_type属性中
 
-#### 阶段性任务
-#
-# 1. 完成单个模块的typing，先保证所有expr都是typed的，stmt先不管
-#
-#
+# pass 2:
