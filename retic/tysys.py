@@ -18,31 +18,32 @@ class Ty:
 class TyPrim(Ty):
     pass
 class TyInt(TyPrim):
-    def __str__(self):
+    def __repr__(self):
         return 'TyInt'
 class TyBool(TyPrim):
-    def __str__(self):
+    def __repr__(self):
         return 'TyBool'
 class TyStr(TyPrim):
-    def __str__(self):
+    def __repr__(self):
         return 'TyStr'
 
 class TyDyn(Ty):
-    def __str__(self):
+    def __repr__(self):
         return 'TyDyn'
 
 class TyBot(Ty): # 理论上需要这样的类型，不包含任何元素的类型，用于类型的交，但是不会提供给用户
-    def __str__(self):
+    def __repr__(self):
         return 'TyBot'
 
 class TyNone(Ty):
-    pass
+    def __repr__(self):
+        return 'TyNone'
 
 class TyModule(Ty): # 不会提供给用户
     def __init__(self, allFieldType):
         # allFieldType是{str:Ty}的python字典
         self.allFieldType = allFieldType
-    def __str__(self):
+    def __repr__(self):
         # print(type(self.allFieldType))
         ret = 'TyModule(\n'
         for key, val in self.allFieldType.items():
@@ -119,7 +120,7 @@ class TyFun(Ty):
             self.bodyType = TyDyn()
         else:
             self.bodyType = bodyType
-    def __str__(self):
+    def __repr__(self):
         return 'TyFun(' + str(self.argType) + '->' + str(self.bodyType) + ')'
     def setArgType(self, argType):
         self.argType = argType
@@ -146,26 +147,26 @@ class TyContainer(Ty): # 同质容器类型;如果是异质容器类型，那么
 class TyList(TyContainer):
     def __init__(self, eltType=TyDyn()):
         self.eltType = eltType
-    def __str__(self):
+    def __repr__(self):
         return 'TyList[' + str(self.eltType) + ']'
 
 class TyDict(TyContainer):
     def __init__(self, keyType=TyDyn(), valType=TyDyn()):
         self.keyType = keyType
         self.valType = valType
-    def __str__(self):
+    def __repr__(self):
         return 'TyDict[' + str(self.keyType) + ',' + str(self.valType) + ']'
 
 class TyTuple(TyContainer):
     def __init__(self, eltType=TyDyn()):
         self.eltType = eltType
-    def __str__(self):
+    def __repr__(self):
         return 'TyTuple[' + str(self.eltType) + ']'
 
 class TySet(TyContainer):
     def __init__(self, eltType=TyDyn()):
         self.eltType = eltType
-    def __str__(self):
+    def __repr__(self):
         return 'TySet[' + str(self.eltType) + ']'
 
 

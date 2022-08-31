@@ -1,5 +1,6 @@
+from typing import *
 
-def add(a:'Int', b:'Int'=1) -> 'Int':
+def add(a:int, b:int=1) -> int:
     c = a + b + 1
     return c
 

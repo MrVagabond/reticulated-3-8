@@ -31,6 +31,7 @@ def type_check(node):
         else:
             raise DemoErr("not support this type of constant")
     elif isinstance(node, ast.Name):
+        pass
 
 
 
