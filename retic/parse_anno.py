@@ -10,6 +10,7 @@ import ast
 
 from .tysys import *
 from . import visitor
+from . import env
 
 __all__ = ['parse_type_annotation', 'ParseTyAnno']
 
@@ -44,10 +45,13 @@ def parse_type_annotation(anno):
 
 
 class ParseTyAnno(visitor.Visitor):
-    def visit_Module(self, node, *args, **kwargs):
+    def visit_Module(self, node):
+        func_type_recorder = env.FuncTypeRecorder()
         for n in node.body:
-            self.visit(n, *args, **kwargs)
-    def visit_FunctionDef(self, node, *args, **kwargs):
+            self.visit(n, func_type_recorder)
+        return func_type_recorder
+
+    def visit_FunctionDef(self, node, func_type_recorder:env.FuncTypeRecorder):
         arg_list = node.args.args
         arg_type = []
         for arg in arg_list:
@@ -63,6 +67,7 @@ class ParseTyAnno(visitor.Visitor):
         print(arg_type, end='')
         print(", return type is: " + str(return_type))
         node.retic_type = TyFun(argType=TyListArg(argTypeList=arg_type), bodyType=return_type, funName=node.name)
+        func_type_recorder.put(node.name, node.retic_type)
 
 
 class ParseTyAnnoErr(Exception):

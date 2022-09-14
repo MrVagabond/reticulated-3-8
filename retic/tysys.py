@@ -8,7 +8,7 @@ import sys
 __all__ = ['TyInt', 'TyBool', 'TyStr', 'TyDyn', 'TyNone',
            'TyModule', 'TyListArg', 'TyDynArg', 'TyFun',
            'TyList', 'TyDict', 'TyTuple', 'TySet', 'TyContainer',
-           'typeEq', 'typeConsistent', 'typeJoin', 'typeMeet',
+           'typeEq', 'typeConsistent', 'typeJoin', 'typeMeet', 'areAllDynArgs',
            'TypingEnv']
 
 
@@ -59,8 +59,8 @@ class TyArg(Ty): # 参数需要单独开一个类型，因为一个函数的参�
 
 # 参数个数固定的参数类型
 class TyListArg(TyArg):
-    def __init__(self, argTypeList, argNameList=None):
-        self.argTypeList = argTypeList # python列表[Ty]
+    def __init__(self, argTypeList:list, argNameList:list=None):
+        self.argTypeList:list = argTypeList
         if argNameList is None:
             self.argNameList = []
         else:
@@ -73,11 +73,11 @@ class TyListArg(TyArg):
             ret = ret[:-1]
         ret += ')'
         return ret
-    def setTypeOfIndex(self, index, argType):
+    def setTypeOfIndex(self, index:int, argType:Ty):
         if index < 0 or index >= len(self.argTypeList):
             raise TySysErr('index overflow')
         self.argTypeList[index] = argType
-    def getTypeOfIndex(self, index):
+    def getTypeOfIndex(self, index:int)->Ty:
         if index < 0 or index >= len(self.argTypeList):
             raise TySysErr('index overflow')
         return self.argTypeList[index]
@@ -271,6 +271,33 @@ def fun_match(ty):
         return TyFun(argType=TyDynArg(), bodyType=TyDyn())
     else:
         raise TySysErr('bad function matching relation')
+
+def areAllDynArgs(ty):
+    """
+    判断参数是否全是TyDyn类型
+    """
+    if isinstance(ty, TyDynArg):
+        return True
+    if isinstance(ty, TyListArg):
+        for t in ty.getArgTypeList():
+            if not isinstance(t, TyDyn):
+                return False
+        return True
+    return False
+
+def runtimeValue2Ty(val):
+    """
+    Python实际运行时的值的类型对应到tysys中的类型
+    """
+    if isinstance(val, int):
+        return TyInt()
+    if isinstance(val, str):
+        return TyStr()
+    if isinstance(val, bool):
+        return TyBool()
+    if isinstance(val, type(None)):
+        return TyNone()
+    return TyDyn()
 
 
 class TypingEnv(object):

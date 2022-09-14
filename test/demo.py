@@ -1,12 +1,15 @@
 from typing import *
+from add import zero, add
 
 def transform(lst:List[int], f:Callable[[int],int]) -> List[int]:
     res: List[int] = []
     for e in lst:
-        res.append(f(e))
+        res.append(f(e))    # 当不知道f的target时，就无法进入，只能当做黑盒
+                            # 但其实运行时是知道target的，f.__name__即可，只是静态时不知道罢了
     return res
 
 def foo(x):
+    x = add(zero(), x)
     return x + "hello"
 
 def foo2(x:int):

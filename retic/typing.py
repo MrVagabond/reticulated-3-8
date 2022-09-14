@@ -4,117 +4,19 @@ import re
 from .tysys import *
 from . import visitor
 from . import typing_builtin
+from . import env
 
 
 class TypingVisitor(visitor.Visitor):
 
-    def visit_Module(self, node, typing_env=None):
-        # Module(stmt* body, type_ignore *type_ignores)
-        env = None
-        if typing_env is None:
-            env = TypingEnv()
-        else:
-            env = TypingEnv(copyFrom=typing_env)
+    def visit_Module(self, node, ftr:env.FuncTypeRecorder, typing_env=None):
+        # 只在函数内进行typing
         for nd in node.body:
-            env = self.visit(nd, env)
-        node.retic_type = env
-        return env
-
-    #---- visit_stmt: TypingEnv -> TypingEnv
-
-    def visit_FunctionDef(self, node, typing_env):
-        # FunctionDef(identifier name, arguments args,
-        #             stmt* body, expr* decorator_list, expr? returns,
-        #             string? type_comment)
-        env = TypingEnv(copyFrom=typing_env)
-
-        # 将参数及其类型加入环境，将函数本身也加入环境（用于递归调用）
-        return_type = str2type(node.returns.value)
-        args_name = []
-        args_type = {}
-
-        allArgs = node.args.posonlyargs + node.args.args + [node.args.vararg] + node.args.kwonlyargs + [node.args.kwarg]
-        for arg in allArgs:
-            if arg is None:  # vararg和kwarg可能是None
-                continue
-            if arg.annotation is not None:
-                assert isinstance(arg.annotation, ast.Constant)
-                args_name.append(arg.arg)
-                args_type[arg.arg] = str2type(arg.annotation.value)
-            else:
-                args_name.append(arg.arg)
-                args_type[arg.arg] = TyDyn()
-
-        node.retic_type = TyFun(funName=node.name,
-                                      argType=TyListArg([args_type[x] for x in args_name], args_name),
-                                      bodyType=return_type)
-        for nm, ty in zip(node.retic_type.getArgType().getArgNameList(), node.retic_type.getArgType().getArgTypeList()):
-            env.put(nm, ty)
-        env.put(node.name, node.retic_type)
-        for nd in node.body:
-            env = self.visit(nd, env)
-
-        # 最后只在传入env中新增该函数的类型
-        ret_env = TypingEnv(copyFrom=typing_env)
-        ret_env.put(node.name, node.retic_type)
-        return ret_env
-
-    def visit_ClassDef(self, node, typing_env):
-        # ClassDef(identifier name,
-        #              expr* bases,
-        #              keyword* keywords,
-        #              stmt* body,
-        #              expr* decorator_list)
-        env = TypingEnv(copyFrom=typing_env)
-        raise TypingErr('Not Implemented')
-
-    def visit_For(self, node, typing_env):
-        # For(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)
-        env = TypingEnv(copyFrom=typing_env)
-        raise TypingErr('Not Implemented')
-
-    def visit_While(self, node, typing_env):
-        # While(expr test, stmt* body, stmt* orelse)
-        env = TypingEnv(copyFrom=typing_env)
-        raise TypingErr('Not Implemented')
-
-    def visit_If(self, node, typing_env):
-        # If(expr test, stmt* body, stmt* orelse)
-        env = TypingEnv(copyFrom=typing_env)
-        raise TypingErr('Not Implemented')
-
-    def visit_With(self, node, typing_env):
-        # With(withitem* items, stmt* body, string? type_comment)
-        env = TypingEnv(copyFrom=typing_env)
-        raise TypingErr('Not Implemented')
+            self.visit(nd, ftr)
 
 
-    def visit_Assign(self, node, typing_env):
-        # Assign(expr* targets, expr value, string? type_comment)
-
-        env = TypingEnv(copyFrom=typing_env)
-        value_type = self.visit(node.value, env)  # Ty
-        # case 1: Multiple assignment 就是 x = y = 1 这种
-        for t in node.targets:
-            assert isinstance(t, ast.Name)
-            env.put(t.id, value_type)
-            t.retic_type = value_type
-        # case 2: Unpacking 也就是 x,y = 1,2 这种，暂不处理
-        if isinstance(node.targets[0], ast.Tuple) or isinstance(node.targets[0], ast.List):
-            raise TypingErr('暂时不支持unpacking形式的assign操作')
-        return env
-
-
-    def visit_Return(self, node, typing_env):
-        # Return(expr? value)
-        if node.value is None:
-            pass
-        else:
-            self.visit(node.value, typing_env)
-        return TypingEnv(copyFrom=typing_env)
-
-
-    #---- visit_expr: TypingEnv -> Ty
+    def visit_FunctionDef(self, node):
+        pass
 
     def visit_Constant(self, node, typing_env):
         if isinstance(node.value, int):
